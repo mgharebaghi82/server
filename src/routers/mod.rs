@@ -1,13 +1,13 @@
-use axum::extract::{Query, Multipart};
+use axum::extract::{Multipart, Query};
 use axum::http::Method;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
-use axum::{Json, Router, http::StatusCode};
+use axum::{http::StatusCode, Json, Router};
 use futures_util::StreamExt;
 use mongodb::bson::{doc, from_document, to_document, Document};
 use mongodb::{Client, Collection, Database};
 use serde::{Deserialize, Serialize};
-use tower_http::cors::{Any, CorsLayer, AllowHeaders};
+use tower_http::cors::{AllowHeaders, Any, CorsLayer};
 
 pub fn create_routes() -> Router {
     let cors = CorsLayer::new()
@@ -27,10 +27,10 @@ pub fn create_routes() -> Router {
 #[derive(Serialize, Deserialize, Debug)]
 struct Cards {
     title: String,
-    desc:String,
+    desc: String,
     body: String,
     img: String,
-    category: String
+    category: String,
 }
 
 async fn website_db() -> Database {
@@ -62,54 +62,64 @@ async fn insert_datas(mut multipart: Multipart) -> impl IntoResponse {
         desc: String::new(),
         body: String::new(),
         img: String::new(),
-        category: String::new()
+        category: String::new(),
     };
 
     while let Some(field) = multipart.next_field().await.unwrap() {
         let name = field.name().unwrap().to_string();
 
         match name.as_str() {
-            "title" => card.title = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap(),
-            "desc" => card.desc = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap(),
-            "body" => card.body = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap(),
+            "title" => {
+                card.title = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap()
+            }
+            "desc" => {
+                card.desc = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap()
+            }
+            "body" => {
+                card.body = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap()
+            }
             "img" => {
                 let file_name = field.file_name().unwrap().to_string();
-                let path = std::path::PathBuf::from("./../client/build/static/media").join(file_name);
-                card.img = format!("home/client/build/static/media/{}", field.file_name().unwrap());
+                let path =
+                    std::path::PathBuf::from("./../client/build/static/media").join(file_name);
+                card.img = format!("/static/media/{}", field.file_name().unwrap());
                 std::fs::write(path, field.bytes().await.unwrap().clone()).unwrap();
             }
-            "category" => card.category = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap(),
+            "category" => {
+                card.category =
+                    String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap()
+            }
             _ => {}
         }
     }
 
     let card_todoc = to_document(&card).unwrap();
-    let coll:Collection<Document> = website_db().await.collection("main_collection");
+    let coll: Collection<Document> = website_db().await.collection("main_collection");
     coll.insert_one(card_todoc, None).await.unwrap();
 
-    (StatusCode::OK ,"recieved".to_string())
+    (StatusCode::OK, "recieved".to_string())
 }
 
 #[derive(Serialize, Deserialize)]
 struct QueryParams {
-    message:String
+    message: String,
 }
 
 async fn query_params(Query(query): Query<QueryParams>) -> Json<Cards> {
-    let main_coll:Collection<Document> = website_db().await.collection("main_collection");
+    let main_coll: Collection<Document> = website_db().await.collection("main_collection");
     let filter = doc! {"title": query.message};
     let find_doc = main_coll.find_one(filter, None).await.unwrap();
-    let card:Cards = from_document(find_doc.unwrap()).unwrap();
+    let card: Cards = from_document(find_doc.unwrap()).unwrap();
     Json(card)
 }
 
 async fn whitepaper() -> Json<Vec<Cards>> {
-    let mut papers:Vec<Cards> = Vec::new();
-    let main_coll:Collection<Document> = website_db().await.collection("main_collection");
+    let mut papers: Vec<Cards> = Vec::new();
+    let main_coll: Collection<Document> = website_db().await.collection("main_collection");
     let filter = doc! {"category": "whitepaper".to_string()};
     let mut cursor = main_coll.find(filter, None).await.unwrap();
     while let Some(doc) = cursor.next().await {
-        let paper:Cards = from_document(doc.unwrap()).unwrap();
+        let paper: Cards = from_document(doc.unwrap()).unwrap();
         papers.push(paper);
     }
 
