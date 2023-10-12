@@ -75,7 +75,7 @@ async fn insert_datas(mut multipart: Multipart) -> impl IntoResponse {
             "img" => {
                 let file_name = field.file_name().unwrap().to_string();
                 let path = std::path::PathBuf::from("./../client/build/static/media").join(file_name);
-                card.img = format!("./static/media/{}", field.file_name().unwrap());
+                card.img = format!("home/client/build/static/media/{}", field.file_name().unwrap());
                 std::fs::write(path, field.bytes().await.unwrap().clone()).unwrap();
             }
             "category" => card.category = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap(),
