@@ -10,4 +10,5 @@ pub async fn run() {
         .serve(app.into_make_service())
         .await
         .unwrap();
+    println!("start serevr...");
 }
