@@ -60,6 +60,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arc-swap"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bddcadddf5e9015d310179a59bb28c4d4b9920ad0f11e8e14dbadf654890c9a6"
+
+[[package]]
 name = "async-compression"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -148,15 +154,17 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "447f28c85900215cc1bea282f32d4a2f22d55c5a300afdfbc661c8d6a632e063"
 dependencies = [
+ "arc-swap",
  "bytes",
  "futures-util",
  "http",
  "http-body",
  "hyper",
- "openssl",
  "pin-project-lite",
+ "rustls",
+ "rustls-pemfile",
  "tokio",
- "tokio-openssl",
+ "tokio-rustls",
  "tower-service",
 ]
 
@@ -472,21 +480,6 @@ name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
-
-[[package]]
-name = "foreign-types"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"
-dependencies = [
- "foreign-types-shared",
-]
-
-[[package]]
-name = "foreign-types-shared"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "form_urlencoded"
@@ -1067,44 +1060,6 @@ name = "once_cell"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
-
-[[package]]
-name = "openssl"
-version = "0.10.58"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9dfc0783362704e97ef3bd24261995a699468440099ef95d869b4d9732f829a"
-dependencies = [
- "bitflags 2.4.0",
- "cfg-if",
- "foreign-types",
- "libc",
- "once_cell",
- "openssl-macros",
- "openssl-sys",
-]
-
-[[package]]
-name = "openssl-macros"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.37",
-]
-
-[[package]]
-name = "openssl-sys"
-version = "0.9.94"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f55da20b29f956fb01f0add8683eb26ee13ebe3ebd935e49898717c6b4b2830"
-dependencies = [
- "cc",
- "libc",
- "pkg-config",
- "vcpkg",
-]
 
 [[package]]
 name = "parking_lot"
@@ -1730,18 +1685,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-openssl"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c08f9ffb7809f1b20c1b398d92acf4cc719874b3b2b2d9ea2f09b4a80350878a"
-dependencies = [
- "futures-util",
- "openssl",
- "openssl-sys",
- "tokio",
-]
-
-[[package]]
 name = "tokio-rustls"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1969,12 +1912,6 @@ dependencies = [
  "getrandom",
  "serde",
 ]
-
-[[package]]
-name = "vcpkg"
-version = "0.2.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "version_check"
