@@ -140,7 +140,6 @@ async fn relays(body: String) -> String {
             .unwrap();
         let mut writer = BufWriter::new(file);
         writeln!(writer, "{}", body).unwrap();
-        return body;
     } else {
         File::create("relays.dat").unwrap();
         let file = OpenOptions::new()
@@ -150,6 +149,6 @@ async fn relays(body: String) -> String {
             .unwrap();
         let mut writer = BufWriter::new(file);
         writeln!(writer, "{}", body).unwrap();
-        return body;
     }
+    body
 }
