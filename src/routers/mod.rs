@@ -1,3 +1,6 @@
+use std::fs::{self, File, OpenOptions};
+use std::io::{BufWriter, Write};
+
 use axum::extract::{Multipart, Query};
 use axum::http::Method;
 use axum::response::IntoResponse;
@@ -19,6 +22,7 @@ pub fn create_routes() -> Router {
         .route("/post_data", post(insert_datas))
         .route("/query_param", get(query_params))
         .route("/whitepaper", get(whitepaper))
+        .route("/relays", post(relays))
         .layer(cors);
 
     app
@@ -124,4 +128,28 @@ async fn whitepaper() -> Json<Vec<Cards>> {
     }
 
     Json(papers)
+}
+
+async fn relays(body: String) -> String {
+    let relays_exist = fs::metadata("relays.dat").is_ok();
+    if relays_exist {
+        let file = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open("relays.dat")
+            .unwrap();
+        let mut writer = BufWriter::new(file);
+        writeln!(writer, "{}", body).unwrap();
+        return body;
+    } else {
+        File::create("relays.dat").unwrap();
+        let file = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open("relays.dat")
+            .unwrap();
+        let mut writer = BufWriter::new(file);
+        writeln!(writer, "{}", body).unwrap();
+        return body;
+    }
 }
