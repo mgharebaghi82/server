@@ -139,36 +139,47 @@ async fn relays(body: String) -> String {
     let mut response = Addresses { addr: Vec::new() };
     let relays_exist = fs::metadata("/etc/relays.dat").is_ok();
 
-    if relays_exist {
-        let relays_file = File::open("/etc/relays.dat").unwrap();
-        let reader = BufReader::new(relays_file);
-        let mut exist_adrr = Vec::new();
-        for line in reader.lines() {
-            let addr = line.unwrap();
-            response.addr.push(addr.clone());
-            exist_adrr.push(addr.clone());
-        }
-
-        let file = OpenOptions::new()
-            .write(true)
-            .append(true)
-            .open("/etc/relays.dat")
-            .unwrap();
-        let mut writer = BufWriter::new(file);
-        if !exist_adrr.contains(&body) {
-            writeln!(writer, "{}", body).unwrap();
+    if body == "want_addresses".to_string() {
+        if relays_exist {
+            let relays_file = File::open("/etc/relays.dat").unwrap();
+            let reader = BufReader::new(relays_file);
+            for line in reader.lines() {
+                let addr = line.unwrap();
+                response.addr.push(addr.clone());
+            }
         }
     } else {
-        File::create("/etc/relays.dat").unwrap();
-        let file = OpenOptions::new()
-            .write(true)
-            .append(true)
-            .open("/etc/relays.dat")
-            .unwrap();
-        let mut writer = BufWriter::new(file);
-        writeln!(writer, "{}", body).unwrap();
+        if relays_exist {
+            let relays_file = File::open("/etc/relays.dat").unwrap();
+            let reader = BufReader::new(relays_file);
+            let mut exist_adrr = Vec::new();
+            for line in reader.lines() {
+                let addr = line.unwrap();
+                response.addr.push(addr.clone());
+                exist_adrr.push(addr.clone());
+            }
 
-        response.addr.push(body);
+            let file = OpenOptions::new()
+                .write(true)
+                .append(true)
+                .open("/etc/relays.dat")
+                .unwrap();
+            let mut writer = BufWriter::new(file);
+            if !exist_adrr.contains(&body) {
+                writeln!(writer, "{}", body).unwrap();
+            }
+        } else {
+            File::create("/etc/relays.dat").unwrap();
+            let file = OpenOptions::new()
+                .write(true)
+                .append(true)
+                .open("/etc/relays.dat")
+                .unwrap();
+            let mut writer = BufWriter::new(file);
+            writeln!(writer, "{}", body).unwrap();
+
+            response.addr.push(body);
+        }
     }
 
     let str_res = serde_json::to_string(&response).unwrap();
