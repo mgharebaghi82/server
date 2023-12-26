@@ -24,6 +24,7 @@ pub fn create_routes() -> Router {
         .route("/whitepaper", get(whitepaper))
         .route("/relays", post(post_relays))
         .route("/relays", get(get_relays))
+        .route("/rpc", post(rpc_address))
         .layer(cors);
 
     app
@@ -191,4 +192,29 @@ async fn get_relays() -> String {
 
     let str_addresses = serde_json::to_string(&response).unwrap();
     str_addresses
+}
+
+async fn rpc_address(address: String) -> String {
+    let path = "/home/Downloads/rpsees.dat";
+    let rpc_file_exist = fs::metadata(path).is_ok();
+    if rpc_file_exist {
+        let rpc_file = File::open(path).unwrap();
+        let reader = BufReader::new(rpc_file);
+        let mut addresses = Vec::new();
+        for addr in reader.lines() {
+            let exist_addr = addr.unwrap();
+            addresses.push(exist_addr);
+        }
+
+        if !addresses.contains(&address) {
+            let w_rpc_file = File::open(path).unwrap();
+            let mut writer = BufWriter::new(w_rpc_file);
+            writeln!(writer, "{}", address).unwrap();
+        }
+    } else {
+        let rpc_file = File::create(path).unwrap();
+        let mut writer = BufWriter::new(rpc_file);
+        writeln!(writer, "{}", address).unwrap();
+    }
+    "".to_string()
 }
