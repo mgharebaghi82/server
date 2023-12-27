@@ -208,12 +208,12 @@ async fn rpc_address(address: String) -> String {
         }
 
         if !addresses.contains(&address) {
-            let w_rpc_file = File::open(path).unwrap();
+            let w_rpc_file = OpenOptions::new().append(true).write(true).open(path).unwrap();
             let mut writer = BufWriter::new(w_rpc_file);
             writeln!(writer, "{}", address).unwrap();
         }
     } else {
-        let rpc_file = File::create(path).unwrap();
+        let rpc_file = OpenOptions::new().append(true).write(true).open(path).unwrap();
         let mut writer = BufWriter::new(rpc_file);
         writeln!(writer, "{}", address).unwrap();
     }
