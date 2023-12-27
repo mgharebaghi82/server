@@ -25,6 +25,7 @@ pub fn create_routes() -> Router {
         .route("/relays", post(post_relays))
         .route("/relays", get(get_relays))
         .route("/rpc", post(rpc_address))
+        .route("/rpc", get(get_rpc_addresses))
         .layer(cors);
 
     app
@@ -217,4 +218,18 @@ async fn rpc_address(address: String) -> String {
         writeln!(writer, "{}", address).unwrap();
     }
     "".to_string()
+}
+
+async fn get_rpc_addresses() -> Json<Vec<String>> {
+    let path = "/home/Downloads/rpsees.dat";
+    let addresses_file = File::open(path).unwrap();
+    let mut addresses = Vec::new();
+    let reader = BufReader::new(addresses_file);
+
+    for i in reader.lines() {
+        let addr = i.unwrap();
+        addresses.push(addr);
+    }
+
+    Json(addresses)
 }
