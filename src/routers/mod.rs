@@ -27,6 +27,7 @@ pub fn create_routes() -> Router {
         .route("/rpc", post(rpc_address))
         .route("/rpc", get(get_rpc_addresses))
         .route("/rmaddr", post(rm_address))
+        .route("/rmrpc", post(rm_rpc))
         .layer(cors);
 
     app
@@ -258,6 +259,30 @@ async fn rm_address(addr: String) -> String {
             relays.remove(i);
             let mut writer_file = File::create("/home/Downloads/relays.dat").unwrap();
             for addr in relays {
+                writeln!(writer_file, "{}", addr).unwrap();
+            }   
+        }
+        None => {}
+    }
+
+    "removed".to_string()
+}
+
+async fn rm_rpc(addr: String) -> String {
+    let relays_file = File::open("/home/Downloads/rpsees.dat").unwrap();
+    let reader = BufReader::new(relays_file);
+    let mut all_rpcs = Vec::new();
+    for i in reader.lines() {
+        let addr = i.unwrap();
+        all_rpcs.push(addr);
+    }
+
+    let index = all_rpcs.iter().position(|address| address.contains(&addr));
+    match index {
+        Some(i) => {
+            all_rpcs.remove(i);
+            let mut writer_file = File::create("/home/Downloads/rpsees.dat").unwrap();
+            for addr in all_rpcs {
                 writeln!(writer_file, "{}", addr).unwrap();
             }   
         }
