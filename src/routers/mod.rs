@@ -26,6 +26,7 @@ pub fn create_routes() -> Router {
         .route("/relays", get(get_relays))
         .route("/rpc", post(rpc_address))
         .route("/rpc", get(get_rpc_addresses))
+        .route("/rmaddr", post(rm_address))
         .layer(cors);
 
     app
@@ -208,12 +209,20 @@ async fn rpc_address(address: String) -> String {
         }
 
         if !addresses.contains(&address) {
-            let w_rpc_file = OpenOptions::new().append(true).write(true).open(path).unwrap();
+            let w_rpc_file = OpenOptions::new()
+                .append(true)
+                .write(true)
+                .open(path)
+                .unwrap();
             let mut writer = BufWriter::new(w_rpc_file);
             writeln!(writer, "{}", address).unwrap();
         }
     } else {
-        let rpc_file = OpenOptions::new().append(true).write(true).open(path).unwrap();
+        let rpc_file = OpenOptions::new()
+            .append(true)
+            .write(true)
+            .open(path)
+            .unwrap();
         let mut writer = BufWriter::new(rpc_file);
         writeln!(writer, "{}", address).unwrap();
     }
@@ -232,4 +241,28 @@ async fn get_rpc_addresses() -> Json<Vec<String>> {
     }
 
     Json(addresses)
+}
+
+async fn rm_address(addr: String) -> String {
+    let relays_file = File::open("/home/Downloads/relays.dat").unwrap();
+    let reader = BufReader::new(relays_file);
+    let mut relays = Vec::new();
+    for i in reader.lines() {
+        let addr = i.unwrap();
+        relays.push(addr);
+    }
+
+    let index = relays.iter().position(|address| address.clone() == addr);
+    match index {
+        Some(i) => {
+            relays.remove(i);
+            let mut writer_file = File::create("/home/Downloads/relays.dat").unwrap();
+            for addr in relays {
+                writeln!(writer_file, "{}", addr).unwrap();
+            }   
+        }
+        None => {}
+    }
+
+    "removed".to_string()
 }
