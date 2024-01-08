@@ -1,7 +1,7 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 
-use axum::extract::{Multipart, Query};
+use axum::extract::{self, Query};
 use axum::http::Method;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
@@ -28,6 +28,7 @@ pub fn create_routes() -> Router {
         .route("/rpc", get(get_rpc_addresses))
         .route("/rmaddr", post(rm_address))
         .route("/rmrpc", post(rm_rpc))
+        .route("/apis", get(handle_apis))
         .layer(cors);
 
     app
@@ -65,48 +66,13 @@ async fn main_page_data() -> Json<Vec<Cards>> {
     Json(all_data)
 }
 
-async fn insert_datas(mut multipart: Multipart) -> impl IntoResponse {
-    let mut card = Cards {
-        title: String::new(),
-        desc: String::new(),
-        body: String::new(),
-        img: String::new(),
-        category: String::new(),
-    };
-
-    while let Some(field) = multipart.next_field().await.unwrap() {
-        let name = field.name().unwrap().to_string();
-
-        match name.as_str() {
-            "title" => {
-                card.title = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap()
-            }
-            "desc" => {
-                card.desc = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap()
-            }
-            "body" => {
-                card.body = String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap()
-            }
-            "img" => {
-                let file_name = field.file_name().unwrap().to_string();
-                let path =
-                    std::path::PathBuf::from("/home/client/build/static/media").join(file_name);
-                card.img = format!("/static/media/{}", field.file_name().unwrap());
-                std::fs::write(path, field.bytes().await.unwrap().clone()).unwrap();
-            }
-            "category" => {
-                card.category =
-                    String::from_utf8(field.bytes().await.unwrap().clone().into()).unwrap()
-            }
-            _ => {}
-        }
-    }
-
-    let card_todoc = to_document(&card).unwrap();
+async fn insert_datas(extract::Json(data): extract::Json<Cards>) -> impl IntoResponse {
+    let card_todoc = to_document(&data).unwrap();
     let coll: Collection<Document> = website_db().await.collection("main_collection");
-    coll.insert_one(card_todoc, None).await.unwrap();
-
-    (StatusCode::OK, "recieved".to_string())
+    match coll.insert_one(card_todoc, None).await {
+        Ok(_) => (StatusCode::OK, "recieved".to_string()),
+        Err(_) => (StatusCode::NOT_ACCEPTABLE, "Error".to_string()),
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -260,7 +226,7 @@ async fn rm_address(addr: String) -> String {
             let mut writer_file = File::create("/home/Downloads/relays.dat").unwrap();
             for addr in relays {
                 writeln!(writer_file, "{}", addr).unwrap();
-            }   
+            }
         }
         None => {}
     }
@@ -284,10 +250,28 @@ async fn rm_rpc(addr: String) -> String {
             let mut writer_file = File::create("/home/Downloads/rpsees.dat").unwrap();
             for addr in all_rpcs {
                 writeln!(writer_file, "{}", addr).unwrap();
-            }   
+            }
         }
         None => {}
     }
 
     "removed".to_string()
+}
+
+async fn handle_apis() -> Json<Vec<Cards>> {
+    let mut all_apis_doc = Vec::new();
+    let apis_coll: Collection<Document> = website_db().await.collection("main_collection");
+    let filter = doc! {"category": "api".to_string()};
+    let mut cursor = apis_coll.find(filter, None).await.unwrap();
+    while let Some(doc) = cursor.next().await {
+        match doc {
+            Ok(data) => {
+                let api: Cards = from_document(data).unwrap();
+                all_apis_doc.push(api)
+            },
+            Err(_) => break
+        }
+    }
+
+    Json(all_apis_doc)
 }
