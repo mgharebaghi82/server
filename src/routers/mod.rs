@@ -11,6 +11,8 @@ use mongodb::bson::{doc, from_document, to_document, Document};
 use mongodb::{Client, Collection, Database};
 use serde::{Deserialize, Serialize};
 use tower_http::cors::{AllowHeaders, Any, CorsLayer};
+mod structures;
+use structures::Block;
 
 pub fn create_routes() -> Router {
     let cors = CorsLayer::new()
@@ -28,7 +30,8 @@ pub fn create_routes() -> Router {
         .route("/rpc", get(get_rpc_addresses))
         .route("/rmaddr", post(rm_address))
         .route("/rmrpc", post(rm_rpc))
-        .route("/apis", get(handle_apis))
+        .route("/apis", get(handle_apis)).
+        route("/blockchain", get(handle_blockchain))
         .layer(cors);
 
     app
@@ -48,6 +51,14 @@ async fn website_db() -> Database {
         .await
         .unwrap();
     let db = client.database("centipedeweb");
+    db
+}
+
+async fn blockchain_db() -> Database {
+    let client = Client::with_uri_str("mongodb://localhost:27017")
+        .await
+        .unwrap();
+    let db = client.database("Blockchain");
     db
 }
 
@@ -274,4 +285,23 @@ async fn handle_apis() -> Json<Vec<Cards>> {
     }
 
     Json(all_apis_doc)
+}
+
+
+//get all blokchain from blockchain database in mongodb and sent it to client website as json response
+async fn handle_blockchain() -> Json<Vec<Block>> {
+    let mut all_blocks = Vec::new();
+    let blocks_coll: Collection<Document> = blockchain_db().await.collection("blocks");
+    let mut cursor = blocks_coll.find(None, None).await.unwrap();
+    while let Some(doc) = cursor.next().await {
+        match doc {
+            Ok(data) => {
+                let block:Block = from_document(data).unwrap();
+                all_blocks.push(block)
+            },
+            Err(_) => break
+        }
+    }
+
+    Json(all_blocks)
 }
