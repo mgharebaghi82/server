@@ -291,7 +291,7 @@ async fn handle_apis() -> Json<Vec<Cards>> {
 //get all blokchain from blockchain database in mongodb and sent it to client website as json response
 async fn handle_blockchain() -> Json<Vec<Block>> {
     let mut all_blocks = Vec::new();
-    let blocks_coll: Collection<Document> = blockchain_db().await.collection("blocks");
+    let blocks_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut cursor = blocks_coll.find(None, None).await.unwrap();
     while let Some(doc) = cursor.next().await {
         match doc {
