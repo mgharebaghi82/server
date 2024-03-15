@@ -1,5 +1,6 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::str::FromStr;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
@@ -9,6 +10,7 @@ use axum::{http::StatusCode, Json, Router};
 use futures_util::StreamExt;
 use mongodb::bson::{doc, from_document, to_document, Document};
 use mongodb::{Client, Collection, Database};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use tower_http::cors::{AllowHeaders, Any, CorsLayer};
 mod structures;
@@ -30,8 +32,9 @@ pub fn create_routes() -> Router {
         .route("/rpc", get(get_rpc_addresses))
         .route("/rmaddr", post(rm_address))
         .route("/rmrpc", post(rm_rpc))
-        .route("/apis", get(handle_apis)).
-        route("/blockchain", get(handle_blockchain))
+        .route("/apis", get(handle_apis))
+        .route("/blockchain", get(handle_blockchain))
+        .route("/remaining_coins", get(remaining_centis))
         .layer(cors);
 
     app
@@ -279,14 +282,13 @@ async fn handle_apis() -> Json<Vec<Cards>> {
             Ok(data) => {
                 let api: Cards = from_document(data).unwrap();
                 all_apis_doc.push(api)
-            },
-            Err(_) => break
+            }
+            Err(_) => break,
         }
     }
 
     Json(all_apis_doc)
 }
-
 
 //get all blokchain from blockchain database in mongodb and sent it to client website as json response
 async fn handle_blockchain() -> Json<Vec<Block>> {
@@ -296,12 +298,29 @@ async fn handle_blockchain() -> Json<Vec<Block>> {
     while let Some(doc) = cursor.next().await {
         match doc {
             Ok(data) => {
-                let block:Block = from_document(data).unwrap();
+                let block: Block = from_document(data).unwrap();
                 all_blocks.push(block)
-            },
-            Err(_) => break
+            }
+            Err(_) => break,
         }
     }
 
     Json(all_blocks)
+}
+
+async fn remaining_centis() -> String {
+    let blocks_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
+    let mut cursor = blocks_coll.find(None, None).await.unwrap();
+    let mut generated_centis = Decimal::from_str("0.0").unwrap();
+    let all_centies = Decimal::from_str("21000000.0").unwrap();
+    while let Some(doc) = cursor.next().await {
+        match doc {
+            Ok(document) => {
+                let block: Block = from_document(document).unwrap();
+                generated_centis += block.body.coinbase.coinbase_data.reward.round_dp(12);
+            }
+            Err(_) => break,
+        }
+    }
+    (all_centies - generated_centis.round_dp(12)).to_string()
 }
