@@ -160,7 +160,7 @@ async fn post_relays(body: String) -> String {
     str_res
 }
 
-async fn get_relays() -> String {
+async fn get_relays() -> Json<Addresses> {
     let mut response = Addresses { addr: Vec::new() };
     let relays_exist = fs::metadata("/home/Downloads/relays.dat").is_ok();
 
@@ -173,8 +173,7 @@ async fn get_relays() -> String {
         }
     }
 
-    let str_addresses = serde_json::to_string(&response).unwrap();
-    str_addresses
+    Json(response)
 }
 
 async fn rpc_address(address: String) -> String {
