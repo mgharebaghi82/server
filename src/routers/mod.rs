@@ -334,6 +334,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
     tokio::spawn(async move {
         loop {
+            println!("first of loop");
             match wathcing.next().await {
                 Some(_change) => match _change {
                     Ok(_ch) => {
@@ -355,18 +356,20 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                             Ok(_) => {
                                 println!("event sent");
                             }
-                            Err(e) => {
-                                println!("error line 359: {e}")
+                            Err(_e) => {
+                                // println!("error line 359: {e}")
                             }
                         }
                     }
-                    Err(e) => {
-                        println!("error line 364: {e}")
+                    Err(_e) => {
+                        // println!("error line 364: {e}")
                     }
                 },
                 None => {}
             }
+            println!("end of loop");
         }
+        println!("exit from loop!!!");
     });
 
     Sse::new(stream)
