@@ -2,8 +2,6 @@ use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
-use std::thread;
-use std::time::Duration;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
@@ -358,12 +356,12 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                                 println!("event sent");
                             }
                             Err(_e) => {
-                                println!("error line 359: {_e}")
+                                // println!("error line 359: {_e}")
                             }
                         }
                     }
                     Err(_e) => {
-                        println!("error line 364: {_e}")
+                        // println!("error line 364: {_e}")
                     }
                 },
                 None => {}
@@ -371,5 +369,5 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         }
     });
 
-    Sse::new(stream).keep_alive(KeepAlive::default())
+    Sse::new(stream)
 }
