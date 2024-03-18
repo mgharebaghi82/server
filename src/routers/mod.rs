@@ -39,7 +39,7 @@ pub fn create_routes() -> Router {
         .route("/apis", get(handle_apis))
         .route("/blockchain", get(handle_blockchain))
         .route("/remaining_coins", get(remaining_centis))
-        // .route("/utxosse", get(utxo_sse))
+        .route("/utxosse", get(utxo_sse))
         .layer(cors);
 
     app
@@ -329,51 +329,47 @@ async fn remaining_centis() -> String {
     (all_centies - generated_centis.round_dp(12)).to_string()
 }
 
-// async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-//     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-//     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
-//     // let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
-//     // let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
-//     tokio::spawn(async move {
-//         loop {
-//             // println!("first of loop");
-//             // match wathcing.next().await {
-//             //     Some(_change) => match _change {
-//             //         Ok(_ch) => {
-//             //             let mut cursor = blockchain_coll.find(None, None).await.unwrap();
-//             //             let mut generated_centis = Decimal::from_str("0.0").unwrap();
-//             //             let all_centies = Decimal::from_str("21000000.0").unwrap();
-//             //             while let Some(doc) = cursor.next().await {
-//             //                 match doc {
-//             //                     Ok(document) => {
-//             //                         let block: Block = from_document(document).unwrap();
-//             //                         generated_centis +=
-//             //                             block.body.coinbase.coinbase_data.reward.round_dp(12);
-//             //                     }
-//             //                     Err(_) => break,
-//             //                 }
-//             //             }
-//             //             let centies = (all_centies - generated_centis.round_dp(12)).to_string();
-//             //             match tx.send(Ok(Event::default().data(centies))) {
-//             //                 Ok(_) => {
-//             //                     println!("event sent");
-//             //                 }
-//             //                 Err(_e) => {
-//             //                     println!("error line 359: {_e}")
-//             //                 }
-//             //             }
-//             //         }
-//             //         Err(_e) => {
-//             //             println!("error line 364: {_e}")
-//             //         }
-//             //     },
-//             //     None => {}
-//             // }
-//            tx.send(Ok(Event::default().data("hello".to_string()))).unwrap(); 
-//            thread::sleep(Duration::from_secs(5));
-//            println!("event sent");
-//         }
-//     });
+async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
+    let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
+    let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
+    tokio::spawn(async move {
+        loop {
+            match wathcing.next().await {
+                Some(_change) => match _change {
+                    Ok(_ch) => {
+                        let mut cursor = blockchain_coll.find(None, None).await.unwrap();
+                        let mut generated_centis = Decimal::from_str("0.0").unwrap();
+                        let all_centies = Decimal::from_str("21000000.0").unwrap();
+                        while let Some(doc) = cursor.next().await {
+                            match doc {
+                                Ok(document) => {
+                                    let block: Block = from_document(document).unwrap();
+                                    generated_centis +=
+                                        block.body.coinbase.coinbase_data.reward.round_dp(12);
+                                }
+                                Err(_) => break,
+                            }
+                        }
+                        let centies = (all_centies - generated_centis.round_dp(12)).to_string();
+                        match tx.send(Ok(Event::default().data(centies))) {
+                            Ok(_) => {
+                                println!("event sent");
+                            }
+                            Err(_e) => {
+                                println!("error line 359: {_e}")
+                            }
+                        }
+                    }
+                    Err(_e) => {
+                        println!("error line 364: {_e}")
+                    }
+                },
+                None => {}
+            }
+        }
+    });
 
-//     Sse::new(stream).keep_alive(KeepAlive::default())
-// }
+    Sse::new(stream).keep_alive(KeepAlive::default())
+}
