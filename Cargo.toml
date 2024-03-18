@@ -18,3 +18,4 @@ libp2p = {version= "^0.53", features = ["full"]}
 sp-core = "^30.0"
 serde_with = "^3.3"
 rust_decimal = "^1.33"
+tokio-stream = "0.1.15"
