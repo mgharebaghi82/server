@@ -333,42 +333,38 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
 
-    tokio::spawn(async move {
-        loop {
-            match wathcing.next().await {
-                Some(_change) => match _change {
-                    Ok(_ch) => {
-                        let mut cursor = blockchain_coll.find(None, None).await.unwrap();
-                        let mut generated_centis = Decimal::from_str("0.0").unwrap();
-                        let all_centies = Decimal::from_str("21000000.0").unwrap();
-                        while let Some(doc) = cursor.next().await {
-                            match doc {
-                                Ok(document) => {
-                                    let block: Block = from_document(document).unwrap();
-                                    generated_centis +=
-                                        block.body.coinbase.coinbase_data.reward.round_dp(12);
-                                }
-                                Err(_) => {}
-                            }
+    match wathcing.next().await {
+        Some(_change) => match _change {
+            Ok(_ch) => {
+                let mut cursor = blockchain_coll.find(None, None).await.unwrap();
+                let mut generated_centis = Decimal::from_str("0.0").unwrap();
+                let all_centies = Decimal::from_str("21000000.0").unwrap();
+                while let Some(doc) = cursor.next().await {
+                    match doc {
+                        Ok(document) => {
+                            let block: Block = from_document(document).unwrap();
+                            generated_centis +=
+                                block.body.coinbase.coinbase_data.reward.round_dp(12);
                         }
-                        let centies = (all_centies - generated_centis.round_dp(12)).to_string();
-                        match tx.send(Ok(Event::default().data(centies))) {
-                            Ok(_) => {
-                                println!("event sent");
-                            }
-                            Err(_e) => {
-                                // println!("error line 359: {_e}")
-                            }
-                        }
+                        Err(_) => {}
+                    }
+                }
+                let centies = (all_centies - generated_centis.round_dp(12)).to_string();
+                match tx.send(Ok(Event::default().data(centies))) {
+                    Ok(_) => {
+                        println!("event sent");
                     }
                     Err(_e) => {
-                        // println!("error line 364: {_e}")
+                        // println!("error line 359: {_e}")
                     }
-                },
-                None => {}
+                }
             }
-        }
-    });
+            Err(_e) => {
+                // println!("error line 364: {_e}")
+            }
+        },
+        None => {}
+    }
 
     Sse::new(stream)
 }
