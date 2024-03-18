@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
-use axum::response::sse::Event;
+use axum::response::sse::{Event, KeepAlive};
 use axum::response::{IntoResponse, Sse};
 use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
@@ -350,10 +350,9 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                         }
                     }
                     let centies = (all_centies - generated_centis.round_dp(12)).to_string();
-                    println!("{}", centies);
-                    match tx.send(Ok(Event::default().data(centies))) {
+                    match tx.send(Ok(Event::default().data(centies.clone()))) {
                         Ok(_) => {
-                            println!("event sent");
+                            println!("event sent:{}", centies);
                         }
                         Err(_) => {}
                     }
@@ -363,5 +362,5 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         }
     });
 
-    Sse::new(stream)
+    Sse::new(stream).keep_alive(KeepAlive::default())
 }
