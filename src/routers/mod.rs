@@ -329,6 +329,7 @@ async fn remaining_centis() -> String {
 
 async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
 
@@ -347,7 +348,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                                     generated_centis +=
                                         block.body.coinbase.coinbase_data.reward.round_dp(12);
                                 }
-                                Err(_) => break,
+                                Err(_) => {}
                             }
                         }
                         let centies = (all_centies - generated_centis.round_dp(12)).to_string();
@@ -357,13 +358,11 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                             }
                             Err(_e) => {
                                 // println!("error line 359: {_e}")
-                                break;
                             }
                         }
                     }
                     Err(_e) => {
                         // println!("error line 364: {_e}")
-                        break;
                     }
                 },
                 None => {}
@@ -371,6 +370,5 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         }
     });
 
-    let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
     Sse::new(stream)
 }
