@@ -357,19 +357,18 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                                 println!("event sent");
                             }
                             Err(_e) => {
-                                // println!("error line 359: {e}")
+                                println!("error line 359: {_e}")
                             }
                         }
                     }
                     Err(_e) => {
-                        // println!("error line 364: {e}")
+                        println!("error line 364: {_e}")
                     }
                 },
                 None => {}
             }
             println!("end of loop");
         }
-        println!("exit from loop!!!");
     });
 
     Sse::new(stream)
