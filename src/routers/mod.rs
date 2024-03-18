@@ -370,5 +370,6 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     });
 
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
+    println!("{:?}", stream);
     Sse::new(stream)
 }
