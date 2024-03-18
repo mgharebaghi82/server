@@ -370,7 +370,8 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
             //     None => {}
             // }
            tx.send(Ok(Event::default().data("hello".to_string()))).unwrap(); 
-           thread::sleep(Duration::from_secs(5))
+           thread::sleep(Duration::from_secs(5));
+           println!("event sent");
         }
     });
 
