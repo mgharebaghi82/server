@@ -357,11 +357,13 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                             }
                             Err(_e) => {
                                 // println!("error line 359: {_e}")
+                                break;
                             }
                         }
                     }
                     Err(_e) => {
                         // println!("error line 364: {_e}")
+                        break;
                     }
                 },
                 None => {}
@@ -369,7 +371,6 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         }
     });
 
-    let mut stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
-    println!("{:?}", stream.next());
+    let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
     Sse::new(stream)
 }
