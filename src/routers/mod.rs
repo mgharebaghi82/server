@@ -333,8 +333,8 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
 
-    match wathcing.next().await {
-        Some(_change) => match _change {
+    while let Some(_change) = wathcing.next().await {
+        match _change {
             Ok(_ch) => {
                 let mut cursor = blockchain_coll.find(None, None).await.unwrap();
                 let mut generated_centis = Decimal::from_str("0.0").unwrap();
@@ -362,8 +362,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
             Err(_e) => {
                 // println!("error line 364: {_e}")
             }
-        },
-        None => {}
+        }
     }
 
     Sse::new(stream)
