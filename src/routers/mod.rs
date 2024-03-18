@@ -355,10 +355,14 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                             Ok(_) => {
                                 println!("event sent:{}", centies);
                             }
-                            Err(_) => {}
+                            Err(e) => {
+                                println!("error line 359: {e}")
+                            }
                         }
                     }
-                    Err(_) => {}
+                    Err(e) => {
+                        println!("error line 364: {e}")
+                    }
                 },
                 None => {}
             }
