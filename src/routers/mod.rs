@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
-use axum::response::sse::{Event, KeepAlive};
+use axum::response::sse::Event;
 use axum::response::{IntoResponse, Sse};
 use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
@@ -333,7 +333,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
 
-    async move { 
+    async { 
         loop {
             match wathcing.next().await {
                 Some(_change) => match _change {
