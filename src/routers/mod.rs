@@ -350,8 +350,11 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                         }
                     }
                     let centies = (all_centies - generated_centis.round_dp(12)).to_string();
+                    println!("{}", centies);
                     match tx.send(Ok(Event::default().data(centies))) {
-                        Ok(_) => {}
+                        Ok(_) => {
+                            println!("event sent");
+                        }
                         Err(_) => {}
                     }
                 }
