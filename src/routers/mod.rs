@@ -342,7 +342,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                         let block: Block = from_document(doc.unwrap()).unwrap();
                         match tx
                             .send(Ok(Event::default()
-                                .data(format!("data:{}\n\n", block.header.blockhash))))
+                                .data("sending block".to_string())))
                         {
                             Ok(_) => {
                                 println!("block hash sent");
