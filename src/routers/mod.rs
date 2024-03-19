@@ -347,16 +347,20 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                         {
                             Ok(_) => {
                                 println!("block hash sent");
-                                thread::sleep(Duration::from_secs(1));
                             }
-                            Err(_) => {}
+                            Err(_) => {
+                                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                            }
                         }
                     }
                     Err(_e) => {
                         // println!("error line 364: {_e}")
+                        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
                     }
                 },
-                None => {}
+                None => {
+                    tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                }
             }
             // tokio::time::sleep(tokio::time::Duration::from_millis(10)).await; // Sleep to yield control to other tasks
         }
