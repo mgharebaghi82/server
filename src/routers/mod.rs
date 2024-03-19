@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
-use axum::response::sse::{Event, KeepAlive, Sse};
+use axum::response::sse::{Event, Sse};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
@@ -332,10 +332,10 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
-    let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
+    let mut watching = blockchain_coll.watch(None, None).await.unwrap();
 
     let watching_stream = async_stream::stream! {
-        while let Some(change) = wathcing.next().await {
+        while let Some(change) = watching.next().await {
             yield change;
         }
     };
@@ -364,5 +364,5 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         }
     });
 
-    Sse::new(stream).keep_alive(KeepAlive::default())
+    return Sse::new(stream)
 }
