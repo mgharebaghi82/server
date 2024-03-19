@@ -10,12 +10,11 @@ use axum::response::sse::{Event, Sse};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
-use futures_util::{Stream, StreamExt};
+use futures_util::StreamExt;
 use mongodb::bson::{doc, from_document, to_document, Document};
 use mongodb::{Client, Collection, Database};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use tokio::select;
 use tower_http::cors::{AllowHeaders, Any, CorsLayer};
 mod structures;
 use structures::Block;
@@ -335,7 +334,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
     
-    while let Some(change) = wathcing.next().await {
+    while let Some(_change) = wathcing.next().await {
         match tx.send(Ok(Event::default().data("test sse".to_string()))) {
             Ok(_) => {
                 println!("tx sent");
