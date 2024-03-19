@@ -22,8 +22,7 @@ pub fn create_routes() -> Router {
     let cors = CorsLayer::new()
         .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
         .allow_origin(Any)
-        .allow_headers(AllowHeaders::any())
-        .allow_credentials(true);
+        .allow_headers(AllowHeaders::any());
     let app: Router = Router::new()
         .route("/", get(main_page_data))
         .route("/post_data", post(insert_datas))
