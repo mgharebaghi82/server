@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
+use std::thread;
 use std::time::Duration;
 
 use axum::extract::{self, Query};
@@ -346,7 +347,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                         {
                             Ok(_) => {
                                 println!("block hash sent");
-                                tokio::time::sleep(Duration::from_secs(1)).await;
+                                thread::sleep(Duration::from_secs(1));
                             }
                             Err(_) => {}
                         }
