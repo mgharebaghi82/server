@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
+use std::time::Duration;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
@@ -330,26 +331,12 @@ async fn remaining_centis() -> String {
 async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
-    let mut should_send = true;
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
 
     tokio::spawn(async move {
         loop {
-
-            match wathcing.next().await {
-                Some(change) => match change {
-                    Ok(_) => {
-                        should_send = true
-                    }
-                    Err(_) => {
-                        should_send = false
-                    }
-                }
-                None => {should_send = false}
-            }
-
-            if should_send {
+            if wathcing.next().await.is_some() {
                 match tx.send(Ok(Event::default().data("text".to_string()))) {
                     Ok(_) => {
                         println!("tx sent");
@@ -357,6 +344,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                     Err(_) => {}
                 }
             }
+            tokio::time::sleep(Duration::from_secs(10)).await;
         }
     });
 
