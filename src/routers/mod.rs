@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
-use axum::response::sse::{Event, Sse};
+use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
@@ -334,15 +334,28 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
 
-    while let Some(_change) = wathcing.next().await {
-        match tx.send(Ok(Event::default().data("test sse".to_string()))) {
-            Ok(_) => {
-                println!("tx sent and break");
-                break;
-            }
-            Err(_) => {}
+    let watching_stream = async_stream::stream! {
+        while let Some(change) = wathcing.next().await {
+            yield change;
         }
-    }
+    };
 
-    Sse::new(stream)
+    tokio::spawn(async move {
+        futures::pin_mut!(watching_stream);
+        loop {
+            match watching_stream.select_next_some().await {
+                Ok(_) => {
+                    match tx.send(Ok(Event::default().data("test".to_string()))) {
+                        Ok(_) => {
+                            println!("tx sent")
+                        }
+                        Err(_) => {}
+                    }
+                }
+                Err(_) => {}
+            }
+        }
+    });
+
+    Sse::new(stream).keep_alive(KeepAlive::default())
 }
