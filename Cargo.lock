@@ -5354,6 +5354,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "axum-server",
+ "futures",
  "futures-util",
  "libp2p",
  "mongodb",

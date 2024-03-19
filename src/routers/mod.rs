@@ -2,7 +2,7 @@ use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
-use std::time::Duration;
+use futures::Stream;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
@@ -15,6 +15,7 @@ use mongodb::bson::{doc, from_document, to_document, Document};
 use mongodb::{Client, Collection, Database};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use tokio::select;
 use tower_http::cors::{AllowHeaders, Any, CorsLayer};
 mod structures;
 use structures::Block;
@@ -333,17 +334,17 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
-
-    tokio::spawn(async move {
-        while wathcing.next().await.is_some() {
-            match tx.send(Ok(Event::default().data("text".to_string()))) {
-                Ok(_) => {
-                    println!("tx sent");
-                }
-                Err(_) => {}
+    
+    while let Some(change) = wathcing.next().await {
+        match tx.send(Ok(Event::default().data("test sse".to_string()))) {
+            Ok(_) => {
+                println!("tx sent");
             }
+            Err(_) => {}
         }
-    });
+    }
+
+    
 
     Sse::new(stream)
 }
