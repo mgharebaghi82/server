@@ -343,8 +343,14 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                     }
                     Err(_) => {}
                 }
+            } else {
+                match tx.send(Ok(Event::default().data("text".to_string()))) {
+                    Ok(_) => {
+                        println!("tx sent in none");
+                    }
+                    Err(_) => {}
+                }
             }
-            tokio::time::sleep(Duration::from_secs(10)).await;
         }
     });
 
