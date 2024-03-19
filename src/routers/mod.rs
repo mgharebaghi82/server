@@ -349,20 +349,27 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                                     generated_centis +=
                                         block.body.coinbase.coinbase_data.reward.round_dp(12);
                                 }
-                                Err(_) => {}
+                                Err(_) => {
+                                    break;
+                                }
                             }
                         }
                         let centies = (all_centies - generated_centis.round_dp(12)).to_string();
                         match tx.send(Ok(Event::default().data(centies))) {
                             Ok(_) => {}
-                            Err(_) => {}
+                            Err(_) => {
+                                continue;
+                            }
                         }
                     }
                     Err(_e) => {
                         // println!("error line 364: {_e}")
+                        continue;
                     }
                 },
-                None => {}
+                None => {
+                    continue;
+                }
             }
         }
     });
