@@ -20,9 +20,10 @@ use structures::Block;
 
 pub fn create_routes() -> Router {
     let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST])
+        .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
         .allow_origin(Any)
-        .allow_headers(AllowHeaders::any());
+        .allow_headers(AllowHeaders::any())
+        .allow_credentials(true);
     let app: Router = Router::new()
         .route("/", get(main_page_data))
         .route("/post_data", post(insert_datas))
@@ -339,24 +340,19 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                 Some(_change) => match _change {
                     Ok(_ch) => {
                         let doc = _ch.full_document;
-                        let block:Block = from_document(doc.unwrap()).unwrap();
+                        let block: Block = from_document(doc.unwrap()).unwrap();
                         match tx.send(Ok(Event::default().data(block.header.blockhash))) {
                             Ok(_) => {
                                 println!("block hash sent");
                             }
-                            Err(_) => {
-                                continue;
-                            }
+                            Err(_) => {}
                         }
                     }
                     Err(_e) => {
                         // println!("error line 364: {_e}")
-                        continue;
                     }
                 },
-                None => {
-                    continue;
-                }
+                None => {}
             }
         }
     });
