@@ -5,8 +5,8 @@ use std::str::FromStr;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
-use axum::response::sse::Event;
-use axum::response::{IntoResponse, Sse};
+use axum::response::sse::{Event, Sse};
+use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
 use futures_util::{Stream, StreamExt};
