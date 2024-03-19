@@ -2,7 +2,6 @@ use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
-use std::thread;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
