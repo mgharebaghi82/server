@@ -338,24 +338,12 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
             match wathcing.next().await {
                 Some(_change) => match _change {
                     Ok(_ch) => {
-                        let mut cursor = blockchain_coll.find(None, None).await.unwrap();
-                        let mut generated_centis = Decimal::from_str("0.0").unwrap();
-                        let all_centies = Decimal::from_str("21000000.0").unwrap();
-                        while let Some(doc) = cursor.next().await {
-                            match doc {
-                                Ok(document) => {
-                                    let block: Block = from_document(document).unwrap();
-                                    generated_centis +=
-                                        block.body.coinbase.coinbase_data.reward.round_dp(12);
-                                }
-                                Err(_) => {
-                                    break;
-                                }
+                        let doc = _ch.full_document;
+                        let block:Block = from_document(doc.unwrap()).unwrap();
+                        match tx.send(Ok(Event::default().data(block.header.blockhash))) {
+                            Ok(_) => {
+                                println!("block hash sent");
                             }
-                        }
-                        let centies = (all_centies - generated_centis.round_dp(12)).to_string();
-                        match tx.send(Ok(Event::default().data(centies))) {
-                            Ok(_) => {}
                             Err(_) => {
                                 continue;
                             }
