@@ -1,8 +1,8 @@
+use futures::Stream;
 use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
-use futures::Stream;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
@@ -333,17 +333,16 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
-    
+
     while let Some(_change) = wathcing.next().await {
         match tx.send(Ok(Event::default().data("test sse".to_string()))) {
             Ok(_) => {
-                println!("tx sent");
+                println!("tx sent and break");
+                break;
             }
             Err(_) => {}
         }
     }
-
-    
 
     Sse::new(stream)
 }
