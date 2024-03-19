@@ -11,11 +11,13 @@ use axum::response::sse::{Event, Sse};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
+use futures_util::stream::SelectNextSome;
 use futures_util::{Stream, StreamExt};
 use mongodb::bson::{doc, from_document, to_document, Document};
 use mongodb::{Client, Collection, Database};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use tokio_stream::StreamExt;
 use tower_http::cors::{AllowHeaders, Any, CorsLayer};
 mod structures;
 use structures::Block;
@@ -332,37 +334,18 @@ async fn remaining_centis() -> String {
 async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
-    let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
-    let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
+    // let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
+    // let mut wathcing = blockchain_coll.watch(None, None).await;
 
     tokio::spawn(async move {
         loop {
-            match wathcing.next().await {
-                Some(_change) => match _change {
-                    Ok(_ch) => {
-                        let doc = _ch.full_document;
-                        let block: Block = from_document(doc.unwrap()).unwrap();
-                        match tx.send(Ok(Event::default()
-                            .data(serde_json::to_string(&block.header.blockhash).unwrap())))
-                        {
-                            Ok(_) => {
-                                println!("block hash sent");
-                            }
-                            Err(_) => {
-                                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-                            }
-                        }
-                    }
-                    Err(_e) => {
-                        // println!("error line 364: {_e}")
-                        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-                    }
-                },
-                None => {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            match tx.send(Ok(Event::default().data("text".to_string()))) {
+                Ok(_) => {
+                    println!("tx sent");
                 }
+                Err(_) => {}
             }
-            // tokio::time::sleep(tokio::time::Duration::from_millis(10)).await; // Sleep to yield control to other tasks
+             tokio::time::sleep(tokio::time::Duration::from_millis(10)).await; // Sleep to yield control to other tasks
         }
     });
 
