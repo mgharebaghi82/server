@@ -341,7 +341,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                 }
                 Err(_) => {}
             }
-             tokio::time::sleep(tokio::time::Duration::from_millis(10)).await; // Sleep to yield control to other tasks
+             tokio::time::sleep(tokio::time::Duration::from_secs(25)).await; // Sleep to yield control to other tasks
         }
     });
 
