@@ -335,21 +335,12 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
 
     tokio::spawn(async move {
-        loop {
-            if wathcing.next().await.is_some() {
-                match tx.send(Ok(Event::default().data("text".to_string()))) {
-                    Ok(_) => {
-                        println!("tx sent");
-                    }
-                    Err(_) => {}
+        while wathcing.next().await.is_some() {
+            match tx.send(Ok(Event::default().data("text".to_string()))) {
+                Ok(_) => {
+                    println!("tx sent");
                 }
-            } else {
-                match tx.send(Ok(Event::default().data("text".to_string()))) {
-                    Ok(_) => {
-                        println!("tx sent in none");
-                    }
-                    Err(_) => {}
-                }
+                Err(_) => {}
             }
         }
     });
