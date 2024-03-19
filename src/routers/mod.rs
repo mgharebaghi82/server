@@ -20,7 +20,7 @@ use structures::Block;
 
 pub fn create_routes() -> Router {
     let cors = CorsLayer::new()
-        .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
+        .allow_methods([Method::GET, Method::POST])
         .allow_origin(Any)
         .allow_headers(AllowHeaders::any());
     let app: Router = Router::new()
@@ -342,7 +342,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                         let block: Block = from_document(doc.unwrap()).unwrap();
                         match tx
                             .send(Ok(Event::default()
-                                .data("sending block".to_string())))
+                                .data(block.header.blockhash.to_string())))
                         {
                             Ok(_) => {
                                 println!("block hash sent");
