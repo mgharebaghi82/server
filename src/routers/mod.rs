@@ -334,25 +334,28 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
 
     tokio::spawn(async move {
-        match wathcing.next().await {
-            Some(_change) => match _change {
-                Ok(_ch) => {
-                    let doc = _ch.full_document;
-                    let block: Block = from_document(doc.unwrap()).unwrap();
-                    match tx.send(Ok(Event::default()
-                        .data(serde_json::to_string(&block.header.blockhash).unwrap())))
-                    {
-                        Ok(_) => {
-                            println!("block hash sent");
+        loop {
+            match wathcing.next().await {
+                Some(_change) => match _change {
+                    Ok(_ch) => {
+                        let doc = _ch.full_document;
+                        let block: Block = from_document(doc.unwrap()).unwrap();
+                        match tx.send(Ok(Event::default()
+                            .data(serde_json::to_string(&block.header.blockhash).unwrap())))
+                        {
+                            Ok(_) => {
+                                println!("block hash sent");
+                            }
+                            Err(_) => {}
                         }
-                        Err(_) => {}
                     }
-                }
-                Err(_e) => {
-                    // println!("error line 364: {_e}")
-                }
-            },
-            None => {}
+                    Err(_e) => {
+                        // println!("error line 364: {_e}")
+                    }
+                },
+                None => {}
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await; // Sleep to yield control to other tasks
         }
     });
 
