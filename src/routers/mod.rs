@@ -330,18 +330,33 @@ async fn remaining_centis() -> String {
 async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
-    // let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
-    // let mut wathcing = blockchain_coll.watch(None, None).await;
+    let mut should_send = true;
+    let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
+    let mut wathcing = blockchain_coll.watch(None, None).await.unwrap();
 
     tokio::spawn(async move {
         loop {
-            match tx.send(Ok(Event::default().data("text".to_string()))) {
-                Ok(_) => {
-                    println!("tx sent");
+
+            match wathcing.next().await {
+                Some(change) => match change {
+                    Ok(_) => {
+                        should_send = true
+                    }
+                    Err(_) => {
+                        should_send = false
+                    }
                 }
-                Err(_) => {}
+                None => {should_send = false}
             }
-             tokio::time::sleep(tokio::time::Duration::from_secs(25)).await; // Sleep to yield control to other tasks
+
+            if should_send {
+                match tx.send(Ok(Event::default().data("text".to_string()))) {
+                    Ok(_) => {
+                        println!("tx sent");
+                    }
+                    Err(_) => {}
+                }
+            }
         }
     });
 
