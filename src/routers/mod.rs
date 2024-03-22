@@ -340,29 +340,28 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         }
     };
 
-    tokio::spawn(async move {
+    let run_loop = async move {
         futures::pin_mut!(watching_stream);
         loop {
             match watching_stream.select_next_some().await {
-                Ok(_) => {
-                    match tx.send(Ok(Event::default().data("test".to_string()))) {
-                        Ok(_) => {
-                            println!("tx sent")
-                        }
-                        Err(_) => {}
+                Ok(_) => match tx.send(Ok(Event::default().data("test".to_string()))) {
+                    Ok(_) => {
+                        println!("tx sent")
                     }
-                }
-                _ => {
-                    match tx.send(Ok(Event::default().data("err".to_string()))) {
-                        Ok(_) => {
-                            println!("err sent")
-                        }
-                        Err(_) => {}
+                    Err(_) => {}
+                },
+                _ => match tx.send(Ok(Event::default().data("err".to_string()))) {
+                    Ok(_) => {
+                        println!("err sent")
                     }
-                }
+                    Err(_) => {}
+                },
             }
         }
-    });
+    };
 
-    return Sse::new(stream)
+    let send_sse = async { return Sse::new(stream) };
+
+    let join = tokio::join!(run_loop, send_sse);
+    join.1
 }
