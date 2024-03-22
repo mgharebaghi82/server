@@ -332,13 +332,23 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
-    let mut watching = blockchain_coll.watch(None, None).await.unwrap();
+    let watching = blockchain_coll.watch(None, None).await.unwrap();
 
     tokio::spawn(async move {
         futures::pin_mut!(watching);
         while let Some(change) = watching.next().await {
             let data = match change {
-                Ok(change) => serde_json::to_string(&change).unwrap(),
+                Ok(change) => {
+                    let mut cursor = blockchain_coll.find(None, None).await.unwrap();
+                    let mut centies = Decimal::from_str("0.0").unwrap();;
+                    for doc in cursor.next().await {
+                        let block_doc = doc.unwrap();
+                        let block: Block = from_document(block_doc).unwrap();
+                        centies += block.body.coinbase.coinbase_data.reward.round_dp(12);
+                        
+                    }
+                    serde_json::to_string(&centies).unwrap()
+                },
                 Err(e) => {
                     eprintln!("watch error: {:?}", e);
                     continue;
