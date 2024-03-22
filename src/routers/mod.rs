@@ -340,24 +340,13 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
             let all_centies = Decimal::from_str("21000000.0").unwrap();
             let mut mine_centies = Decimal::from_str("0.0").unwrap();
             let mut cursor = blockchain_coll.find(None, None).await.unwrap();
-            while let Some(doc) = cursor.next().await {
-                let document = doc.unwrap();
-                let block: Block = from_document(document).unwrap();
-                mine_centies += block.body.coinbase.coinbase_data.reward.round_dp(12);
-            }
-
+            // while let Some(doc) = cursor.next().await {
+            //     let document = doc.unwrap();
+            //     let block: Block = from_document(document).unwrap();
+            //     mine_centies += block.body.coinbase.coinbase_data.reward.round_dp(12);
+            // }
             let data = match change {
                 Ok(_change) => {
-                    // let mut cursor = blockchain_coll.find(None, None).await.unwrap();
-                    // let mut centies = Decimal::from_str("0.0").unwrap();
-                    // let all_centies = Decimal::from_str("21000000.0").unwrap();
-                    // while let Some(doc) = cursor.next().await {
-                    //     let block_doc = doc.unwrap();
-                    //     let block: Block = from_document(block_doc).unwrap();
-                    //     centies += block.body.coinbase.coinbase_data.reward.round_dp(12);
-                    // }
-                    // println!("change data to: {}", (all_centies - centies));
-                    // serde_json::to_string(&(all_centies - centies)).unwrap()
                     serde_json::to_string(&(all_centies - mine_centies)).unwrap()
                 }
                 Err(e) => {
