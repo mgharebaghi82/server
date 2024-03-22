@@ -334,34 +334,21 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut watching = blockchain_coll.watch(None, None).await.unwrap();
 
-    let watching_stream = async_stream::stream! {
+    tokio::spawn(async move {
+        futures::pin_mut!(watching);
         while let Some(change) = watching.next().await {
-            yield change;
-        }
-    };
-
-    let run_loop = async move {
-        futures::pin_mut!(watching_stream);
-        loop {
-            match watching_stream.select_next_some().await {
-                Ok(_) => match tx.send(Ok(Event::default().data("test".to_string()))) {
-                    Ok(_) => {
-                        println!("tx sent")
-                    }
-                    Err(_) => {}
-                },
-                _ => match tx.send(Ok(Event::default().data("err".to_string()))) {
-                    Ok(_) => {
-                        println!("err sent")
-                    }
-                    Err(_) => {}
-                },
+            let data = match change {
+                Ok(change) => serde_json::to_string(&change).unwrap(),
+                Err(e) => {
+                    eprintln!("watch error: {:?}", e);
+                    continue;
+                }
+            };
+            if tx.send(Ok(Event::default().data(data))).is_err() {
+                break; // Receiver has closed, exit the loop
             }
         }
-    };
+    });
 
-    let send_sse = async { return Sse::new(stream) };
-
-    let join = tokio::join!(run_loop, send_sse);
-    join.1
+    return Sse::new(stream)
 }
