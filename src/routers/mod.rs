@@ -338,9 +338,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         futures::pin_mut!(watching);
         while let Some(change) = watching.next().await {
             let data = match change {
-                Ok(_change) => {
-                    serde_json::to_string(&_change).unwrap()
-                }
+                Ok(change) => serde_json::to_string(&change).unwrap(),
                 Err(e) => {
                     eprintln!("watch error: {:?}", e);
                     continue;
@@ -352,5 +350,5 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         }
     });
 
-    return Sse::new(stream);
+    return Sse::new(stream)
 }
