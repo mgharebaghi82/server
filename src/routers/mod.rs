@@ -338,7 +338,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         futures::pin_mut!(watching);
         while let Some(change) = watching.next().await {
             let data = match change {
-                Ok(change) => {
+                Ok(_change) => {
                     let mut cursor = blockchain_coll.find(None, None).await.unwrap();
                     let mut centies = Decimal::from_str("0.0").unwrap();;
                     for doc in cursor.next().await {
