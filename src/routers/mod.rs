@@ -348,7 +348,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
 
             let data = match change {
                 Ok(_change) => {
-                    serde_json::to_string(&Decimal::from_str("0.0").unwrap()).unwrap()
+                    serde_json::to_string(&_change).unwrap()
                 }
                 Err(e) => {
                     eprintln!("watch error: {:?}", e);
