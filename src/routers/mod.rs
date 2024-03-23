@@ -353,6 +353,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                 }
             };
             if tx.send(Ok(Event::default().data(data))).is_err() {
+                println!("tx send err");
                 break; // Receiver has closed, exit the loop
             }
         }
