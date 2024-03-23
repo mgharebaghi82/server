@@ -1,5 +1,4 @@
 use futures::Stream;
-use mongodb::change_stream::event::ChangeStreamEvent;
 use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
@@ -339,7 +338,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         futures::pin_mut!(watching);
         while let Some(change) = watching.next().await {
             let data = match change {
-                Ok(_) => serde_json::to_string(&"test".to_string()).unwrap(),
+                Ok(change) => serde_json::to_string(&change).unwrap(),
                 Err(e) => {
                     eprintln!("watch error: {:?}", e);
                     continue;
