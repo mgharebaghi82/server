@@ -339,7 +339,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let watching = blockchain_coll.watch(None, None).await.unwrap();
     let centies = Centies {
-        remaining_centis: "test".to_string()
+        remaining_centis: "test".to_string(),
     };
 
     tokio::spawn(async move {
@@ -352,12 +352,17 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                     continue;
                 }
             };
-            if tx.send(Ok(Event::default().data(data))).is_err() {
-                println!("tx send err");
-                break; // Receiver has closed, exit the loop
+            match tx.send(Ok(Event::default().data(data))) {
+                Ok(_) => {
+                    println!("sse sent");
+                }
+                Err(e) => {
+                    println!("tx send err: {e}");
+                    break; // Receiver has closed, exit the loop
+                }
             }
         }
     });
 
-    return Sse::new(stream)
+    return Sse::new(stream);
 }
