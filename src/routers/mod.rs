@@ -1,4 +1,5 @@
 use futures::Stream;
+use mongodb::change_stream::event::OperationType;
 use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
@@ -338,15 +339,21 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let watching = blockchain_coll.watch(None, None).await.unwrap();
-    // let centies = Centies {
-    //     remaining_centis: "test".to_string(),
-    // };
+    let centies = Centies {
+        remaining_centis: "test".to_string(),
+    };
 
     tokio::spawn(async move {
         futures::pin_mut!(watching);
         while let Some(change) = watching.next().await {
             let data = match change {
-                Ok(_change) => serde_json::to_string(&_change).unwrap(),
+                Ok(_change) => {
+                    if _change.operation_type == OperationType::Insert {
+                        serde_json::to_string(&centies).unwrap()
+                    } else {
+                        serde_json::to_string(&_change).unwrap()
+                    }
+                },
                 Err(e) => {
                     eprintln!("watch error: {:?}", e);
                     continue;
