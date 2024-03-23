@@ -328,6 +328,11 @@ async fn remaining_centis() -> String {
     (all_centies - generated_centis.round_dp(12)).to_string()
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Centies {
+    remaining_centis: String,
+}
+
 async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
@@ -338,7 +343,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         futures::pin_mut!(watching);
         while let Some(change) = watching.next().await {
             let data = match change {
-                Ok(_change) => serde_json::to_string(&_change).unwrap(),
+                Ok(_change) => serde_json::to_string(&Centies {remaining_centis: "0.0".to_string()}).unwrap(),
                 Err(e) => {
                     eprintln!("watch error: {:?}", e);
                     continue;
