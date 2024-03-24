@@ -1,4 +1,6 @@
 use futures::Stream;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
@@ -335,18 +337,18 @@ struct Centies {
 }
 
 async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-    let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
+    let (tx, rx) = mpsc::unbounded_channel();
+    let stream = UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut watching = blockchain_coll.watch(None, None).await.unwrap();
-    let centies = Centies {
-        _id: 0,
-        remaining_centis: "test".to_string(),
-    };
+    // let centies = Centies {
+    //     _id: 0,
+    //     remaining_centis: "test".to_string(),
+    // };
 
     tokio::spawn(async move {
         while let Some(_change) = watching.next().await {
-            let data = serde_json::to_string(&centies).unwrap();
+            let data = serde_json::to_string(&_change.unwrap()).unwrap();
             match tx.send(Ok(Event::default().data(data))) {
                 Ok(_) => {
                     println!("sse sent");
