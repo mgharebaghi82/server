@@ -331,9 +331,13 @@ async fn remaining_centis() -> String {
 }
 
 #[derive(Debug, Serialize)]
-struct Centies {
-    _id: i32,
-    remaining_centis: String,
+pub struct Centies {
+    _id: CentiData,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CentiData {
+    _data: String
 }
 
 async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
@@ -341,14 +345,16 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut watching = blockchain_coll.watch(None, None).await.unwrap();
-    // let centies = Centies {
-    //     _id: 0,
-    //     remaining_centis: "test".to_string(),
-    // };
+    let data = CentiData {
+        _data: "test".to_string()
+    };
+    let centies = Centies {
+        _id: data,
+    };
 
     tokio::spawn(async move {
         while let Some(_change) = watching.next().await {
-            let data = serde_json::to_string(&_change.unwrap()).unwrap();
+            let data = serde_json::to_string(&centies).unwrap();
             match tx.send(Ok(Event::default().data(data))) {
                 Ok(_) => {
                     println!("sse sent");
