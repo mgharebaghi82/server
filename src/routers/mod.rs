@@ -331,6 +331,7 @@ async fn remaining_centis() -> String {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Centies {
+    _id: &'static str,
     remaining_centis: String,
 }
 
@@ -340,6 +341,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let watching = blockchain_coll.watch(None, None).await.unwrap();
     let centies = Centies {
+        _id: "0",
         remaining_centis: "test".to_string(),
     };
 
@@ -349,9 +351,9 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
             let data = match change {
                 Ok(_change) => {
                     if _change.operation_type == OperationType::Insert {
-                        serde_json::to_string(&_change).unwrap()
-                    } else {
                         serde_json::to_string(&centies).unwrap()
+                    } else {
+                        serde_json::to_string(&_change).unwrap()
                     }
                 },
                 Err(e) => {
