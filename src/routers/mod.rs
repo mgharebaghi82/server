@@ -349,9 +349,9 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
             let data = match change {
                 Ok(_change) => {
                     if _change.operation_type == OperationType::Insert {
-                        serde_json::to_string(&centies).unwrap()
-                    } else {
                         serde_json::to_string(&_change).unwrap()
+                    } else {
+                        serde_json::to_string(&centies).unwrap()
                     }
                 },
                 Err(e) => {
