@@ -339,14 +339,14 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut watching = blockchain_coll.watch(None, None).await.unwrap();
-    // let centies = Centies {
-    //     _id: 0,
-    //     remaining_centis: "test".to_string(),
-    // };
+    let centies = Centies {
+        _id: 0,
+        remaining_centis: "test".to_string(),
+    };
 
     tokio::spawn(async move {
         while let Some(_change) = watching.next().await {
-            let data = format!("this is test: {:?}", _change.unwrap().id);
+            let data = serde_json::to_string(&centies).unwrap();
             match tx.send(Ok(Event::default().data(data))) {
                 Ok(_) => {
                     println!("sse sent");
