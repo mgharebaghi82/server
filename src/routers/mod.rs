@@ -1,5 +1,5 @@
 use futures::Stream;
-use mongodb::change_stream::event::OperationType;
+use mongodb::change_stream::event::{ChangeStreamEvent, OperationType};
 use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
@@ -329,7 +329,7 @@ async fn remaining_centis() -> String {
     (all_centies - generated_centis.round_dp(12)).to_string()
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 struct Centies {
     _id: i32,
     remaining_centis: String,
@@ -340,21 +340,15 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let watching = blockchain_coll.watch(None, None).await.unwrap();
-    // let mut centies = Centies {
-    //     _id: 0,
-    //     remaining_centis: "test".to_string(),
-    // };
+    let centies = Centies {
+        _id: 0,
+        remaining_centis: "test".to_string(),
+    };
 
     tokio::spawn(async move {
         futures::pin_mut!(watching);
-        while let Some(change) = watching.next().await {
-            let data = match change {
-                Ok(ch) => serde_json::to_string(&ch).unwrap(),
-                Err(e) => {
-                    eprintln!("watch error: {:?}", e);
-                    continue;
-                }
-            };
+        while let Some(_change) = watching.next().await {
+            let data = serde_json::to_string(&centies).unwrap();
             match tx.send(Ok(Event::default().data(data))) {
                 Ok(_) => {
                     println!("sse sent");
