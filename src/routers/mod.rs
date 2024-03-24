@@ -348,7 +348,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     tokio::spawn(async move {
         futures::pin_mut!(watching);
         while let Some(_change) = watching.next().await {
-            let data = serde_json::to_string(&centies).unwrap();
+            let data = serde_json::to_string(&_change.unwrap()).unwrap();
             match tx.send(Ok(Event::default().data(data))) {
                 Ok(_) => {
                     println!("sse sent");
