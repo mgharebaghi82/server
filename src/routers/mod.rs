@@ -3,7 +3,11 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
 
-use axum::extract::{self, Query, ws::{WebSocket, WebSocketUpgrade}};
+use axum::extract::{
+    self,
+    ws::{WebSocket, WebSocketUpgrade},
+    Query,
+};
 use axum::http::Method;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
@@ -331,19 +335,36 @@ struct Centies {
     _id: String,
 }
 
-async fn ws_utxo(mut socket: WebSocket ) {
+async fn ws_utxo(mut socket: WebSocket) {
     // let stream = UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut watching = blockchain_coll.watch(None, None).await.unwrap();
-    let centies = Centies {
-        _id: "5f68821a259b274826821a25".to_string(),
-    };
 
     tokio::spawn(async move {
+        let mut gen_centis = Decimal::from_str("0.0").unwrap();
+        let all_centies = Decimal::from_str("21000000.0").unwrap();
+        let mut data = String::new();
         loop {
             if let Some(_change) = watching.next().await {
-                let data = serde_json::to_string(&centies).unwrap();
-                if socket.send(extract::ws::Message::Text(data)).await.is_err() {
+                match blockchain_coll.find(None, None).await {
+                    Ok(mut corsur) => {
+                        while let Some(result) = corsur.next().await {
+                            match result {
+                                Ok(doc) => {
+                                    let block: Block = from_document(doc).unwrap();
+                                    gen_centis += block.body.coinbase.coinbase_data.reward.round_dp(12);
+                                }
+                                Err(_) => {}
+                            }
+                        }
+                        let remaining = all_centies.round_dp(12) - gen_centis.round_dp(12);
+                        data.push_str(&remaining.to_string())
+                    }
+                    Err(e) => {
+                        println!("error: {}", e);
+                    }
+                }
+                if socket.send(extract::ws::Message::Text(data.clone())).await.is_err() {
                     println!("tx send err");
                     break; // Receiver has closed, exit the loop
                 }
