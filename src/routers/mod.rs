@@ -348,14 +348,9 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         loop {
             if let Some(_change) = watching.next().await {
                 let data = serde_json::to_string(&centies).unwrap();
-                match tx.send(Ok(Event::default().data(data))) {
-                    Ok(_) => {
-                        println!("sse sent");
-                    }
-                    Err(e) => {
-                        println!("tx send err: {e}");
-                        break; // Receiver has closed, exit the loop
-                    }
+                if tx.send(Ok(Event::default().data(data))).is_err() {
+                    println!("tx send err");
+                    break; // Receiver has closed, exit the loop
                 }
             }
         }
