@@ -1,14 +1,10 @@
-use futures::Stream;
-use std::convert::Infallible;
+// use tokio_tungstenite::tungstenite::Message;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::UnboundedReceiverStream;
 
-use axum::extract::{self, Query};
+use axum::extract::{self, Query, ws::{WebSocket, WebSocketUpgrade}};
 use axum::http::Method;
-use axum::response::sse::{Event, Sse};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
@@ -40,7 +36,7 @@ pub fn create_routes() -> Router {
         .route("/apis", get(handle_apis))
         .route("/blockchain", get(handle_blockchain))
         .route("/remaining_coins", get(remaining_centis))
-        .route("/utxosse", get(utxo_sse))
+        .route("/wsutxo", get(|ws| ws_handler(ws)))
         .layer(cors);
 
     app
@@ -335,9 +331,8 @@ struct Centies {
     _id: String,
 }
 
-async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let (tx, rx) = mpsc::unbounded_channel();
-    let stream = UnboundedReceiverStream::new(rx);
+async fn ws_utxo(mut socket: WebSocket ) {
+    // let stream = UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut watching = blockchain_coll.watch(None, None).await.unwrap();
     let centies = Centies {
@@ -348,13 +343,15 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         loop {
             if let Some(_change) = watching.next().await {
                 let data = serde_json::to_string(&centies).unwrap();
-                if tx.send(Ok(Event::default().data(data))).is_err() {
+                if socket.send(extract::ws::Message::Text(data)).await.is_err() {
                     println!("tx send err");
                     break; // Receiver has closed, exit the loop
                 }
             }
         }
     });
+}
 
-    return Sse::new(stream);
+async fn ws_handler(webs: WebSocketUpgrade) -> impl IntoResponse {
+    webs.on_upgrade(|socket| ws_utxo(socket))
 }
