@@ -351,7 +351,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
                 match tx.send(Ok(Event::default().data(data))) {
                     Ok(_) => {
                         println!("sse sent");
-                        break;
+                        return;
                     }
                     Err(e) => {
                         println!("tx send err: {e}");
