@@ -358,6 +358,7 @@ async fn ws_utxo(mut socket: WebSocket) {
                             }
                         }
                         let remaining = all_centies.round_dp(12) - gen_centis.round_dp(12);
+                        data.clear();
                         data.push_str(&remaining.to_string())
                     }
                     Err(e) => {
