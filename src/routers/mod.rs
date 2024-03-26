@@ -341,32 +341,36 @@ async fn ws_utxo(mut socket: WebSocket) {
     let mut watching = blockchain_coll.watch(None, None).await.unwrap();
 
     tokio::spawn(async move {
-        let mut gen_centis = Decimal::from_str("0.0").unwrap();
-        let all_centies = Decimal::from_str("21000000.0").unwrap();
-        let mut data = String::new();
         loop {
             if let Some(_change) = watching.next().await {
+                let mut gen_centis = Decimal::from_str("0.0").unwrap();
+                let all_centies = Decimal::from_str("21000000.0").unwrap();
+                let mut data = String::new();
                 match blockchain_coll.find(None, None).await {
                     Ok(mut corsur) => {
                         while let Some(result) = corsur.next().await {
                             match result {
                                 Ok(doc) => {
                                     let block: Block = from_document(doc).unwrap();
-                                    gen_centis += block.body.coinbase.coinbase_data.reward.round_dp(12);
+                                    gen_centis +=
+                                        block.body.coinbase.coinbase_data.reward.round_dp(12);
                                 }
                                 Err(_) => {}
                             }
                         }
                         let remaining = all_centies.round_dp(12) - gen_centis.round_dp(12);
                         data.clear();
-                        gen_centis = Decimal::from_str("0.0").unwrap();
                         data.push_str(&remaining.to_string())
                     }
                     Err(e) => {
                         println!("error: {}", e);
                     }
                 }
-                if socket.send(extract::ws::Message::Text(data.clone())).await.is_err() {
+                if socket
+                    .send(extract::ws::Message::Text(data.clone()))
+                    .await
+                    .is_err()
+                {
                     println!("tx send err");
                     break; // Receiver has closed, exit the loop
                 }
