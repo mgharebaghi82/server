@@ -332,12 +332,7 @@ async fn remaining_centis() -> String {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Centies {
-    _id: CentiData,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct CentiData {
-    _data: String
+    _id: String,
 }
 
 async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
@@ -345,23 +340,20 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = UnboundedReceiverStream::new(rx);
     let blockchain_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let mut watching = blockchain_coll.watch(None, None).await.unwrap();
-    let data = CentiData {
-        _data: "test".to_string()
+    let centies = Centies {
+        _id: "5f68821a259b274826821a25".to_string(),
     };
-    // let centies = Centies {
-    //     _id: data,
-    // };
 
     tokio::spawn(async move {
-        while let Some(_change) = watching.next().await {
-            let data = serde_json::to_string(&_change.unwrap()).unwrap();
+        if let Some(_change) = watching.next().await {
+            let data = serde_json::to_string(&centies).unwrap();
             match tx.send(Ok(Event::default().data(data))) {
                 Ok(_) => {
                     println!("sse sent");
                 }
                 Err(e) => {
                     println!("tx send err: {e}");
-                    break; // Receiver has closed, exit the loop
+                    // break; // Receiver has closed, exit the loop
                 }
             }
         }
