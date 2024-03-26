@@ -5391,7 +5391,6 @@ dependencies = [
  "sp-core",
  "tokio",
  "tokio-stream",
- "tokio-tungstenite",
  "tower-http",
 ]
 
