@@ -330,13 +330,13 @@ async fn remaining_centis() -> String {
     (all_centies - generated_centis.round_dp(12)).to_string()
 }
 
-#[derive(Debug, Serialize)]
-pub struct Centies {
+#[derive(Debug, Serialize, Deserialize)]
+struct Centies {
     _id: CentiData,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CentiData {
+struct CentiData {
     _data: String
 }
 
@@ -348,13 +348,13 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let data = CentiData {
         _data: "test".to_string()
     };
-    let centies = Centies {
-        _id: data,
-    };
+    // let centies = Centies {
+    //     _id: data,
+    // };
 
     tokio::spawn(async move {
         while let Some(_change) = watching.next().await {
-            let data = serde_json::to_string(&centies).unwrap();
+            let data = serde_json::to_string(&_change.unwrap()).unwrap();
             match tx.send(Ok(Event::default().data(data))) {
                 Ok(_) => {
                     println!("sse sent");
