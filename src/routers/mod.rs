@@ -1,10 +1,10 @@
 use futures::Stream;
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::UnboundedReceiverStream;
 use std::convert::Infallible;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use axum::extract::{self, Query};
 use axum::http::Method;
@@ -345,15 +345,17 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     };
 
     tokio::spawn(async move {
-        if let Some(_change) = watching.next().await {
-            let data = serde_json::to_string(&centies).unwrap();
-            match tx.send(Ok(Event::default().data(data))) {
-                Ok(_) => {
-                    println!("sse sent");
-                }
-                Err(e) => {
-                    println!("tx send err: {e}");
-                    // break; // Receiver has closed, exit the loop
+        loop {
+            if let Some(_change) = watching.next().await {
+                let data = serde_json::to_string(&centies).unwrap();
+                match tx.send(Ok(Event::default().data(data))) {
+                    Ok(_) => {
+                        println!("sse sent");
+                    }
+                    Err(e) => {
+                        println!("tx send err: {e}");
+                        break; // Receiver has closed, exit the loop
+                    }
                 }
             }
         }
