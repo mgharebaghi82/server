@@ -347,7 +347,7 @@ async fn utxo_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     tokio::spawn(async move {
         loop {
             if let Some(_change) = watching.next().await {
-                let data = serde_json::to_string(&centies).unwrap();
+                let data = serde_json::to_string(&_change.unwrap()).unwrap();
                 if tx.send(Ok(Event::default().data(data))).is_err() {
                     println!("tx send err");
                     break; // Receiver has closed, exit the loop
