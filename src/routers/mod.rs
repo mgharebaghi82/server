@@ -39,7 +39,7 @@ pub fn create_routes() -> Router {
         .route("/rmaddr", post(rm_address))
         .route("/rmrpc", post(rm_rpc))
         .route("/apis", get(handle_apis))
-        .route("/blockchain", get(handle_blockchain))
+        .route("/blockchain", post(handle_blockchain))
         .route("/remaining_coins", get(remaining_centis))
         .route("/wsutxo", get(|ws| ws_handler(ws)))
         .layer(cors);
