@@ -344,8 +344,7 @@ async fn ws_utxo(mut socket: WebSocket) {
         loop {
             if let Some(change_stream) = watching.next().await {
                 let mut base_reward = Decimal::from_str("50.0").unwrap().round_dp(12);
-                let mut reamining_centies = Decimal::from_str("0.0").unwrap();
-                let suply = Decimal::from_str("21000000.0").unwrap().round_dp(12);
+                let mut reamining_centies = Decimal::from_str("21000000.0").unwrap();
                 match change_stream {
                     Ok(change) => {
                         let document = change.full_document.unwrap();
@@ -354,9 +353,9 @@ async fn ws_utxo(mut socket: WebSocket) {
                         for i in 1..block_number {
                             if i.abs() % 150000 == 0 {
                                 base_reward = base_reward / Decimal::from_str("2.0").unwrap();
-                                reamining_centies = suply - base_reward;
+                                reamining_centies -= base_reward;
                             } else {
-                                reamining_centies = suply - base_reward;
+                                reamining_centies -= base_reward;
                             }
                         }
                         match socket
