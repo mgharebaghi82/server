@@ -14,7 +14,7 @@ use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
 use futures_util::StreamExt;
 use mongodb::bson::{doc, from_document, to_document, Document};
-use mongodb::{change_stream, Client, Collection, Database};
+use mongodb::{Client, Collection, Database};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use tower_http::cors::{AllowHeaders, Any, CorsLayer};
@@ -351,7 +351,7 @@ async fn ws_utxo(mut socket: WebSocket) {
                         let document = change.full_document.unwrap();
                         let block: Block = from_document(document).unwrap();
                         let block_number = block.header.number;
-                        for i in 0..block_number {
+                        for i in 1..block_number {
                             if i.abs() % 150000 == 0 {
                                 base_reward = base_reward / Decimal::from_str("2.0").unwrap();
                                 reamining_centies = suply - base_reward;
@@ -364,10 +364,8 @@ async fn ws_utxo(mut socket: WebSocket) {
                             .await
                         {
                             Ok(_) => {
-                                println!("sent");
                             }
                             Err(_) => {
-                                println!("error from sent");
                                 break;
                             }
                         }
