@@ -2,7 +2,6 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
-use std::time::Duration;
 
 use axum::extract::{
     self,
@@ -15,7 +14,7 @@ use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
 use futures_util::StreamExt;
 use mongodb::bson::{doc, from_document, to_document, Document};
-use mongodb::{Client, Collection, Database};
+use mongodb::{change_stream, Client, Collection, Database};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use tower_http::cors::{AllowHeaders, Any, CorsLayer};
@@ -343,37 +342,41 @@ async fn ws_utxo(mut socket: WebSocket) {
 
     tokio::spawn(async move {
         loop {
-            let mut base_reward = Decimal::from_str("50.0").unwrap().round_dp(12);
-            let mut reamining_centies = Decimal::from_str("0.0").unwrap();
-            let suply = Decimal::from_str("21000000.0").unwrap().round_dp(12);
-            match watching.next().await {
-                Some(change_stream) => {
-                    match change_stream {
-                        Ok(change) => {
-                            let document = change.full_document.unwrap();
-                            let block:Block = from_document(document).unwrap();
-                            let block_number = block.header.number;
-                            for i in 0..block_number {
-                                if i.abs() % 150000 == 0 {
-                                    base_reward = base_reward / Decimal::from_str("2.0").unwrap();
-                                    reamining_centies = suply - base_reward;
-                                } else {
-                                    reamining_centies = suply - base_reward;
-                                }
-                            }
-                            match socket.send(extract::ws::Message::Text(reamining_centies.to_string())).await {
-                                Ok(_) => {}
-                                Err(_) => {
-                                    break; 
-                                }
+            if let Some(change_stream) = watching.next().await {
+                let mut base_reward = Decimal::from_str("50.0").unwrap().round_dp(12);
+                let mut reamining_centies = Decimal::from_str("0.0").unwrap();
+                let suply = Decimal::from_str("21000000.0").unwrap().round_dp(12);
+                match change_stream {
+                    Ok(change) => {
+                        let document = change.full_document.unwrap();
+                        let block: Block = from_document(document).unwrap();
+                        let block_number = block.header.number;
+                        for i in 0..block_number {
+                            if i.abs() % 150000 == 0 {
+                                base_reward = base_reward / Decimal::from_str("2.0").unwrap();
+                                reamining_centies = suply - base_reward;
+                            } else {
+                                reamining_centies = suply - base_reward;
                             }
                         }
-                        Err(_) => {
-                            break; // Receiver has closed, exit the loop
+                        match socket
+                            .send(extract::ws::Message::Text(reamining_centies.to_string()))
+                            .await
+                        {
+                            Ok(_) => {
+                                println!("sent");
+                            }
+                            Err(_) => {
+                                println!("error from sent");
+                                break;
+                            }
                         }
                     }
+                    Err(_) => {
+                        println!("error from change stream");
+                        break; // Receiver has closed, exit the loop
+                    }
                 }
-                None => {}
             }
         }
     });
