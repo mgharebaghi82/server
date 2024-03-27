@@ -343,40 +343,38 @@ async fn ws_utxo(mut socket: WebSocket) {
 
     tokio::spawn(async move {
         loop {
-            if let Some(_change) = watching.next().await {
-                let mut gen_centis = Decimal::from_str("0.0").unwrap();
-                let all_centies = Decimal::from_str("21000000.0").unwrap();
-                let mut data = String::new();
-                match blockchain_coll.find(None, None).await {
-                    Ok(mut corsur) => {
-                        while let Some(result) = corsur.next().await {
-                            match result {
-                                Ok(doc) => {
-                                    let block: Block = from_document(doc).unwrap();
-                                    gen_centis +=
-                                        block.body.coinbase.coinbase_data.reward.round_dp(12);
+            let mut base_reward = Decimal::from_str("50.0").unwrap().round_dp(12);
+            let mut reamining_centies = Decimal::from_str("0.0").unwrap();
+            let suply = Decimal::from_str("21000000.0").unwrap().round_dp(12);
+            match watching.next().await {
+                Some(change_stream) => {
+                    match change_stream {
+                        Ok(change) => {
+                            let document = change.full_document.unwrap();
+                            let block:Block = from_document(document).unwrap();
+                            let block_number = block.header.number;
+                            for i in 0..block_number {
+                                if i.abs() % 150000 == 0 {
+                                    base_reward = base_reward / Decimal::from_str("2.0").unwrap();
+                                    reamining_centies = suply - base_reward;
+                                } else {
+                                    reamining_centies = suply - base_reward;
                                 }
-                                Err(_) => {}
+                            }
+                            match socket.send(extract::ws::Message::Text(reamining_centies.to_string())).await {
+                                Ok(_) => {}
+                                Err(_) => {
+                                    break; 
+                                }
                             }
                         }
-                        let remaining = all_centies.round_dp(12) - gen_centis.round_dp(12);
-                        data.clear();
-                        data.push_str(&remaining.round_dp(12).to_string())
-                    }
-                    Err(e) => {
-                        println!("error: {}", e);
+                        Err(_) => {
+                            break; // Receiver has closed, exit the loop
+                        }
                     }
                 }
-                if socket
-                    .send(extract::ws::Message::Text(data.clone()))
-                    .await
-                    .is_err()
-                {
-                    println!("tx send err");
-                    break; // Receiver has closed, exit the loop
-                }
+                None => {}
             }
-            tokio::time::sleep(Duration::from_secs(1)).await
         }
     });
 }
