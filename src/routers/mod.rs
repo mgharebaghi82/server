@@ -2,6 +2,7 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
+use std::time::Duration;
 
 use axum::extract::{
     self,
@@ -362,8 +363,7 @@ async fn ws_utxo(mut socket: WebSocket) {
                             .send(extract::ws::Message::Text(reamining_centies.to_string()))
                             .await
                         {
-                            Ok(_) => {
-                            }
+                            Ok(_) => tokio::time::sleep(Duration::from_secs(2)).await,
                             Err(_) => {
                                 break;
                             }
