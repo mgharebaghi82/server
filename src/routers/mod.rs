@@ -296,22 +296,29 @@ async fn handle_apis() -> Json<Vec<Cards>> {
     Json(all_apis_doc)
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Pagination {
+    current_page: u32,
+    page_size: u32,
+}
+
 //get all blokchain from blockchain database in mongodb and sent it to client website as json response
-async fn handle_blockchain() -> Json<Vec<Block>> {
-    let mut all_blocks = Vec::new();
+async fn handle_blockchain(extract::Json(data): extract::Json<Pagination>) -> Json<Vec<Block>> {
+    let mut blocks = Vec::new();
     let blocks_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
-    let mut cursor = blocks_coll.find(None, None).await.unwrap();
+    let filter = doc! {"header.number": {"$get": (data.current_page * data.page_size) - 49, "$lte": data.current_page * data.page_size}};
+    let mut cursor = blocks_coll.find(filter, None).await.unwrap();
     while let Some(doc) = cursor.next().await {
         match doc {
             Ok(data) => {
                 let block: Block = from_document(data).unwrap();
-                all_blocks.push(block)
+                blocks.push(block)
             }
             Err(_) => break,
         }
     }
 
-    Json(all_blocks)
+    Json(blocks)
 }
 
 async fn remaining_centis() -> String {
