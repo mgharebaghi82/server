@@ -15,6 +15,7 @@ use axum::routing::{get, post};
 use axum::{http::StatusCode, Json, Router};
 use futures_util::StreamExt;
 use mongodb::bson::{doc, from_document, to_document, Document};
+use mongodb::options::FindOptions;
 use mongodb::{Client, Collection, Database};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -40,6 +41,7 @@ pub fn create_routes() -> Router {
         .route("/rmrpc", post(rm_rpc))
         .route("/apis", get(handle_apis))
         .route("/blockchain", post(handle_blockchain))
+        .route("/blockchain_pages", post(handle_blockchain_pages))
         .route("/remaining_coins", get(remaining_centis))
         .route("/wsutxo", get(|ws| ws_handler(ws)))
         .layer(cors);
@@ -303,7 +305,7 @@ struct Pagination {
 }
 
 //get all blokchain from blockchain database in mongodb and sent it to client website as json response
-async fn handle_blockchain(extract::Json(data): extract::Json<Pagination>) -> Json<Vec<Block>> {
+async fn handle_blockchain_pages(extract::Json(data): extract::Json<Pagination>) -> Json<Vec<Block>> {
     let mut blocks = Vec::new();
     let blocks_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
     let filter = doc! {"header.number": {"$gte": (data.current_page * data.page_size) - 49, "$lte": data.current_page * data.page_size}};
@@ -317,6 +319,22 @@ async fn handle_blockchain(extract::Json(data): extract::Json<Pagination>) -> Js
             Err(_) => break,
         }
     }
+
+    Json(blocks)
+}
+
+async fn handle_blockchain() -> Json<Vec<Block>> {
+    let mut blocks = Vec::new();
+    let blocks_coll:Collection<Document> = blockchain_db().await.collection("Blocks");
+    let sort = doc! {"header.number": -1};
+    let option = FindOptions::builder().sort(sort).limit(50).build();
+    let mut cursor = blocks_coll.find(None, option).await.unwrap();
+    while let Some(result) = cursor.next().await  {
+        if let Ok(doc) = result {
+            let block:Block = from_document(doc).unwrap();
+            blocks.push(block);
+        }
+    } 
 
     Json(blocks)
 }
