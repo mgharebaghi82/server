@@ -2,6 +2,7 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::str::FromStr;
+use std::time::Duration;
 
 use axum::extract::{
     self,
@@ -375,6 +376,7 @@ async fn ws_utxo(mut socket: WebSocket) {
                     break; // Receiver has closed, exit the loop
                 }
             }
+            tokio::time::sleep(Duration::from_secs(1)).await
         }
     });
 }
