@@ -306,7 +306,7 @@ struct Pagination {
 async fn handle_blockchain(extract::Json(data): extract::Json<Pagination>) -> Json<Vec<Block>> {
     let mut blocks = Vec::new();
     let blocks_coll: Collection<Document> = blockchain_db().await.collection("Blocks");
-    let filter = doc! {"header.number": {"$gte": 1, "$lte": 5}};
+    let filter = doc! {"header.number": {"$gte": (data.current_page * data.page_size) - 49, "$lte": data.current_page * data.page_size}};
     let mut cursor = blocks_coll.find(filter, None).await.unwrap();
     while let Some(doc) = cursor.next().await {
         match doc {
