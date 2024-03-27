@@ -298,8 +298,8 @@ async fn handle_apis() -> Json<Vec<Cards>> {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Pagination {
-    current_page: u32,
-    page_size: u32,
+    current_page: i64,
+    page_size: i64,
 }
 
 //get all blokchain from blockchain database in mongodb and sent it to client website as json response
